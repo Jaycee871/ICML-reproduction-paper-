@@ -2,9 +2,19 @@ name: Build ICML 2026 curated paper bundle
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/build_icml_paper_bundle.py"
+      - ".github/workflows/build-paper-bundle.yml"
 
 permissions:
   contents: write
+
+concurrency:
+  group: icml-paper-bundle
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -28,7 +38,7 @@ jobs:
           gs --version
           gh --version | head -n 1
 
-      - name: Build complete paper bundles
+      - name: Build archival and Teams Lite bundles
         run: |
           python scripts/build_icml_paper_bundle.py --output dist --clean --workers 3 --lite-workers 2
 
