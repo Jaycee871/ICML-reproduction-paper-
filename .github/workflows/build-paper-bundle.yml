@@ -1,0 +1,64 @@
+name: Build ICML 2026 curated paper bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/build_icml_paper_bundle.py"
+      - ".github/workflows/build-paper-bundle.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          python --version
+          curl --version | head -n 1
+          zip -v | head -n 2
+          gh --version | head -n 1
+
+      - name: Build complete paper bundle
+        run: |
+          python scripts/build_icml_paper_bundle.py --output dist --clean --workers 3
+
+      - name: Inspect release assets
+        run: |
+          ls -lh dist/release
+          cat dist/release/RELEASE_NOTES.md
+          cat dist/release/SHA256SUMS
+
+      - name: Publish or replace GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: icml-2026-curated-papers
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
+
+          mapfile -t ASSETS < <(
+            find dist/release -maxdepth 1 -type f \
+              ! -name 'RELEASE_NOTES.md' \
+              -print | sort
+          )
+
+          if [ "${#ASSETS[@]}" -eq 0 ]; then
+            echo "No release assets found" >&2
+            exit 1
+          fi
+
+          gh release create "$TAG" "${ASSETS[@]}" \
+            --title "ICML 2026 Curated Reproduction Papers" \
+            --notes-file dist/release/RELEASE_NOTES.md
