@@ -34,6 +34,7 @@ LITE_PROFILES = [
     {"name": "150dpi-q82", "dpi": 150, "jpeg_q": 82, "mono_dpi": 300},
     {"name": "120dpi-q80", "dpi": 120, "jpeg_q": 80, "mono_dpi": 240},
     {"name": "96dpi-q76", "dpi": 96, "jpeg_q": 76, "mono_dpi": 192},
+    {"name": "72dpi-q70", "dpi": 72, "jpeg_q": 70, "mono_dpi": 144},
 ]
 
 
