@@ -149,9 +149,11 @@ def make_zip(bundle_dir: Path, release_dir: Path) -> list[Path]:
     archive = release_dir / "ICML-2026-curated-papers.zip"
     archive.unlink(missing_ok=True)
 
-    # PDFs are already compressed; store mode avoids wasting CPU while preserving a ZIP package.
+    # Preserve every PDF byte-for-byte while asking ZIP/DEFLATE for maximum
+    # lossless compression. Most PDFs are already internally compressed, so the
+    # expected gain is modest, but this keeps universal .zip compatibility.
     subprocess.run(
-        ["zip", "-0", "-q", "-r", str(archive), "."],
+        ["zip", "-9", "-q", "-r", str(archive), "."],
         cwd=bundle_dir,
         check=True,
     )
@@ -200,6 +202,9 @@ The Hugging Face challenge site can expose a larger ICML 2026 catalogue. This
 bundle intentionally follows the Space's official curated 200-record arXiv-backed
 set. Duplicate arXiv IDs are stored once in papers/, while every original challenge
 record remains represented in manifest.csv.
+
+The ZIP uses maximum lossless DEFLATE compression. The PDFs themselves are kept
+byte-for-byte unchanged; no image resampling or PDF recompression is performed.
 """
     path.write_text(text, encoding="utf-8")
 
@@ -282,7 +287,7 @@ def build(args: argparse.Namespace) -> None:
     if len(archive_assets) == 1:
         archive_note = (
             "The full paper collection is contained in the single asset "
-            f"`{archive_assets[0].name}`."
+            f"`{archive_assets[0].name}` using maximum lossless ZIP/DEFLATE compression."
         )
     else:
         archive_note = (
@@ -303,11 +308,13 @@ Built from the Hugging Face `ICML-2026-agent-repro/challenge` Space's official
 - Unique arXiv PDFs: **{len(unique_ids)}**
 - Duplicate mappings preserved in manifest: **{duplicate_count}**
 - PDF payload: **{total_pdf_bytes / 1024 / 1024 / 1024:.2f} GiB**
+- Archive mode: **maximum lossless ZIP/DEFLATE compression**
 
 {archive_note}
 
-Use `SHA256SUMS` to verify downloaded assets. `manifest.csv` and
-`source_curated.json` are also attached separately for provenance.
+The source PDFs are preserved byte-for-byte. Use `SHA256SUMS` to verify downloaded
+assets. `manifest.csv` and `source_curated.json` are also attached separately for
+provenance.
 """
     (release_dir / "RELEASE_NOTES.md").write_text(release_notes, encoding="utf-8")
 
