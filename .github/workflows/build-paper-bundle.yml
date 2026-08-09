@@ -2,39 +2,35 @@ name: Build ICML 2026 curated paper bundle
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "scripts/build_icml_paper_bundle.py"
-      - ".github/workflows/build-paper-bundle.yml"
-  issues:
-    types: [opened]
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   build:
-    if: github.event_name != 'issues' || github.event.issue.title == 'build-paper-bundle'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install PDF optimization tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghostscript
 
       - name: Show tool versions
         run: |
           python --version
           curl --version | head -n 1
           zip -v | head -n 2
+          gs --version
           gh --version | head -n 1
 
-      - name: Build complete paper bundle
+      - name: Build complete paper bundles
         run: |
-          python scripts/build_icml_paper_bundle.py --output dist --clean --workers 3
+          python scripts/build_icml_paper_bundle.py --output dist --clean --workers 3 --lite-workers 2
 
       - name: Inspect release assets
         run: |
@@ -66,12 +62,3 @@ jobs:
           gh release create "$TAG" "${ASSETS[@]}" \
             --title "ICML 2026 Curated Reproduction Papers" \
             --notes-file dist/release/RELEASE_NOTES.md
-
-      - name: Mark one-shot trigger complete
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh issue view 1 >/dev/null 2>&1; then
-            gh issue close 1 --comment "Paper bundle release built successfully by GitHub Actions." || true
-          fi
