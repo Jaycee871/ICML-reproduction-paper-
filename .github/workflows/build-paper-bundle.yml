@@ -67,10 +67,11 @@ jobs:
             --title "ICML 2026 Curated Reproduction Papers" \
             --notes-file dist/release/RELEASE_NOTES.md
 
-      - name: Close one-shot trigger issue
-        if: success() && github.event_name == 'issues'
+      - name: Mark one-shot trigger complete
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh issue close "$ISSUE_NUMBER" --comment "Paper bundle release built successfully by GitHub Actions."
+          if gh issue view 1 >/dev/null 2>&1; then
+            gh issue close 1 --comment "Paper bundle release built successfully by GitHub Actions." || true
+          fi
